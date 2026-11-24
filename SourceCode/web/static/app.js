@@ -3,6 +3,9 @@
 const SAMPLE_AUTOMATA = {
   sample_01: {
     name: "Ends_With_01",
+    displayName: "Ends with '01'",
+    badge: "Binary NFA",
+    desc: "Recognizes binary strings ending in '01'. Standard benchmark.",
     states: ["q0", "q1", "q2"],
     alphabet: ["0", "1"],
     start_state: "q0",
@@ -15,6 +18,9 @@ const SAMPLE_AUTOMATA = {
   },
   sample_02: {
     name: "Contains_00_or_11_Epsilon",
+    displayName: "Contains '00' or '11'",
+    badge: "ε-NFA",
+    desc: "Uses ε-branches to check for consecutive 00 or 11.",
     states: ["q0", "q1", "q2", "q3", "q4", "q5", "q6"],
     alphabet: ["0", "1"],
     start_state: "q0",
@@ -31,6 +37,9 @@ const SAMPLE_AUTOMATA = {
   },
   sample_03: {
     name: "Cyclic_Epsilon_NFA",
+    displayName: "Cyclic ε-Loops",
+    badge: "Cycle-Safe",
+    desc: "A → B → C → A loop verifying termination of ε-closure BFS reachability.",
     states: ["A", "B", "C", "D"],
     alphabet: ["0", "1"],
     start_state: "A",
@@ -45,6 +54,9 @@ const SAMPLE_AUTOMATA = {
   },
   sample_04: {
     name: "Redundant_DFA_Minimization_Candidate",
+    displayName: "Redundant States",
+    badge: "Minimization",
+    desc: "5-state machine that collapses into 4 minimal states via Table-Filling.",
     states: ["A", "B", "C", "D", "E"],
     alphabet: ["0", "1"],
     start_state: "A",
@@ -60,6 +72,44 @@ const SAMPLE_AUTOMATA = {
       { from: "D", symbol: "1", to: ["A"] },
       { from: "E", symbol: "0", to: ["E"] },
       { from: "E", symbol: "1", to: ["E"] }
+    ]
+  },
+  sample_05: {
+    name: "Binary_Divisible_By_3",
+    displayName: "Divisible by 3",
+    badge: "Arithmetic DFA",
+    desc: "States track remainder modulo 3 (accepts 0, 11, 110, 1001, 1100...).",
+    states: ["rem0", "rem1", "rem2"],
+    alphabet: ["0", "1"],
+    start_state: "rem0",
+    final_states: ["rem0"],
+    transitions: [
+      { from: "rem0", symbol: "0", to: ["rem0"] },
+      { from: "rem0", symbol: "1", to: ["rem1"] },
+      { from: "rem1", symbol: "0", to: ["rem2"] },
+      { from: "rem1", symbol: "1", to: ["rem0"] },
+      { from: "rem2", symbol: "0", to: ["rem1"] },
+      { from: "rem2", symbol: "1", to: ["rem2"] }
+    ]
+  },
+  sample_06: {
+    name: "Even_Zeros_and_Even_Ones",
+    displayName: "Even 0s & Even 1s",
+    badge: "Parity DFA",
+    desc: "4 states tracking parity of zeros and ones (accepts ε, 00, 11, 0101...).",
+    states: ["ee", "oe", "oo", "eo"],
+    alphabet: ["0", "1"],
+    start_state: "ee",
+    final_states: ["ee"],
+    transitions: [
+      { from: "ee", symbol: "0", to: ["oe"] },
+      { from: "ee", symbol: "1", to: ["eo"] },
+      { from: "oe", symbol: "0", to: ["ee"] },
+      { from: "oe", symbol: "1", to: ["oo"] },
+      { from: "oo", symbol: "0", to: ["eo"] },
+      { from: "oo", symbol: "1", to: ["oe"] },
+      { from: "eo", symbol: "0", to: ["oo"] },
+      { from: "eo", symbol: "1", to: ["ee"] }
     ]
   }
 };
@@ -79,18 +129,84 @@ if (typeof Viz !== "undefined") {
 document.addEventListener("DOMContentLoaded", () => {
   initGraphManager();
   initSimulatorPlayer();
+  setupInputModes();
+  setupTemplateCards();
   setupTabs();
   setupSampleSelector();
   setupButtons();
   setupExportButtons();
   setupCanvasControls();
   setupRegexConverter();
+  setupRegexChips();
   setupTestStringGenerator();
 
   // Load sample 1 initially
   loadSample("sample_01");
   convertCurrentNFA();
 });
+
+function setupInputModes() {
+  const modeButtons = document.querySelectorAll(".mode-tab-btn");
+  modeButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      modeButtons.forEach(b => {
+        b.classList.remove("active");
+        b.setAttribute("aria-selected", "false");
+      });
+      document.querySelectorAll(".mode-panel").forEach(p => p.classList.remove("active"));
+
+      btn.classList.add("active");
+      btn.setAttribute("aria-selected", "true");
+      const mode = btn.getAttribute("data-mode");
+      const targetPanel = document.getElementById(`mode-panel-${mode}`);
+      if (targetPanel) {
+        targetPanel.classList.add("active");
+      }
+
+      // If user switches to Draw mode, display the floating builder toolbar
+      const builderToolbar = document.getElementById("builder-toolbar");
+      if (builderToolbar) {
+        builderToolbar.style.display = mode === "builder" ? "flex" : "none";
+      }
+    });
+  });
+}
+
+function setupTemplateCards() {
+  const cards = document.querySelectorAll(".template-card");
+  cards.forEach(card => {
+    card.addEventListener("click", async () => {
+      cards.forEach(c => c.classList.remove("active"));
+      card.classList.add("active");
+
+      const sampleKey = card.getAttribute("data-sample");
+      if (sampleKey && SAMPLE_AUTOMATA[sampleKey]) {
+        loadSample(sampleKey);
+        const sampleSelect = document.getElementById("sample-select");
+        if (sampleSelect) {
+          sampleSelect.value = sampleKey;
+        }
+        await convertCurrentNFA();
+        showToast(`Loaded template: "${SAMPLE_AUTOMATA[sampleKey].displayName}"`, "info");
+      }
+    });
+  });
+}
+
+function setupRegexChips() {
+  const chips = document.querySelectorAll(".regex-chip");
+  chips.forEach(chip => {
+    chip.addEventListener("click", () => {
+      const regexVal = chip.getAttribute("data-regex");
+      const regexInput = document.getElementById("regex-input");
+      if (regexInput && regexVal) {
+        regexInput.value = regexVal;
+        const buildBtn = document.getElementById("btn-convert-regex");
+        if (buildBtn) buildBtn.click();
+      }
+    });
+  });
+}
 
 function initGraphManager() {
   const container = document.getElementById("canvas") || document.getElementById("cy-container");
@@ -155,11 +271,19 @@ function setupTabs() {
   const tabs = document.querySelectorAll(".tab");
   tabs.forEach(tab => {
     tab.addEventListener("click", () => {
-      tabs.forEach(t => t.classList.remove("active"));
-      document.querySelectorAll(".tab-content").forEach(tc => tc.classList.remove("active"));
-
-      tab.classList.add("active");
       const targetId = tab.getAttribute("data-tab");
+
+      // Synchronize all tab buttons targeting this view
+      document.querySelectorAll(`.tab[data-tab="${targetId}"]`).forEach(t => {
+        t.classList.add("active");
+        t.setAttribute("aria-selected", "true");
+      });
+      document.querySelectorAll(`.tab:not([data-tab="${targetId}"])`).forEach(t => {
+        t.classList.remove("active");
+        t.setAttribute("aria-selected", "false");
+      });
+
+      document.querySelectorAll(".tab-content").forEach(tc => tc.classList.remove("active"));
       const targetContent = document.getElementById(targetId);
       if (targetContent) {
         targetContent.classList.add("active");
@@ -363,6 +487,11 @@ async function convertCurrentNFA() {
     const activeTab = document.querySelector(".tab.active");
     const activeTabId = activeTab ? activeTab.getAttribute("data-tab") : "tab-nfa";
     syncGraphWithTab(activeTabId);
+
+    // Automatically generate sample test cases for quick one-click testing
+    if (typeof generateTestStrings === "function") {
+      generateTestStrings();
+    }
 
     showToast("Automaton converted and minimized successfully", "success");
   } catch (err) {

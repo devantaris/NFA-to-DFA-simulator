@@ -1,0 +1,16 @@
+{
+  "name": "Binary_Divisible_By_3",
+  "description": "Recognizes binary representations of numbers divisible by 3 (modulo 3 arithmetic)",
+  "states": ["rem0", "rem1", "rem2"],
+  "alphabet": ["0", "1"],
+  "start_state": "rem0",
+  "final_states": ["rem0"],
+  "transitions": [
+    { "from": "rem0", "symbol": "0", "to": ["rem0"] },
+    { "from": "rem0", "symbol": "1", "to": ["rem1"] },
+    { "from": "rem1", "symbol": "0", "to": ["rem2"] },
+    { "from": "rem1", "symbol": "1", "to": ["rem0"] },
+    { "from": "rem2", "symbol": "0", "to": ["rem1"] },
+    { "from": "rem2", "symbol": "1", "to": ["rem2"] }
+  ]
+}
