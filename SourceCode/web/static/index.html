@@ -3,122 +3,361 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CSET302: NFA to DFA Simulator & Minimizer</title>
-  <link rel="stylesheet" href="/static/styles.css" />
-  <!-- Viz.js for client-side Graphviz rendering -->
+  <title>Automata Theory Simulator | NFA to DFA Engine</title>
+  <link rel="stylesheet" href="/static/styles.css?v=2.0.0" />
+  <!-- Viz.js for client-side Graphviz rendering (M2 backward compatibility) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/viz.js/2.1.2/viz.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/viz.js/2.1.2/full.render.js"></script>
+  <!-- Cytoscape.js & Dagre (Pre-loaded for M3 Interactive Automata Canvas) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"></script>
 </head>
-<body>
-  <div class="header">
-    <div>
-      <h1>Automata Theory Simulator: NFA to DFA Engine</h1>
-      <p>CSET302 Milestone-II | Bennett University | SCSET</p>
+<body class="dark-theme">
+  <!-- Top Glassmorphic Navigation Bar -->
+  <header class="app-header header glass-nav">
+    <div class="nav-brand">
+      <div class="brand-icon-wrapper">
+        <svg class="brand-svg-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="9" cy="16" r="6" stroke="#06b6d4" stroke-width="2.2" fill="rgba(6, 182, 212, 0.15)"/>
+          <circle cx="23" cy="16" r="6" stroke="#8b5cf6" stroke-width="2.2" fill="rgba(139, 92, 246, 0.15)"/>
+          <circle cx="23" cy="16" r="4.2" stroke="#8b5cf6" stroke-width="1.2" fill="none"/>
+          <path d="M15 13H17" stroke="#10b981" stroke-width="2" stroke-linecap="round"/>
+          <path d="M16 11L18 13L16 15" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1 class="brand-title">Automata Theory Simulator: NFA to DFA Engine</h1>
+        <p class="brand-subtitle">Interactive Automata Showcase &amp; Equivalence Verifier | CSET302 • Bennett University</p>
+      </div>
     </div>
-    <div class="badge">Milestone-II Ready</div>
-  </div>
 
-  <div class="main-grid">
-    <!-- Left Column: Controls & Input -->
-    <div>
-      <div class="card">
-        <h2>Automaton Input</h2>
+    <div class="nav-actions">
+      <!-- Status Badges -->
+      <div class="nav-badges">
+        <span id="engine-status-badge" class="badge badge-accent">Engine Ready</span>
+        <span class="badge badge-glass">Glassmorphic Shell</span>
+        <div class="badge badge-legacy">Milestone-II Ready</div>
+      </div>
+
+      <!-- Quick Action Buttons (High-Res Export Hooks for M3) -->
+      <div class="nav-buttons">
+        <button id="btn-export-png" class="btn btn-outline-glass btn-sm" title="Export High-Resolution Canvas PNG (3x)" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Export PNG
+        </button>
+        <button id="btn-export-svg" class="btn btn-outline-glass btn-sm" title="Export Vector SVG" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg> Export SVG
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Application Grid -->
+  <main class="app-layout main-grid">
+    <!-- Left Column: Controls, Inputs & Verification -->
+    <aside class="sidebar-panel">
+      <!-- Card 1: Automaton Definition & Presets -->
+      <section class="card glass-card">
+        <div class="card-header-bar">
+          <h2>Automaton Input</h2>
+          <span class="badge badge-subtle">Definition</span>
+        </div>
+
         <div class="form-group">
           <label for="sample-select">Load Preset Automaton:</label>
-          <select id="sample-select">
-            <option value="custom">-- Custom Automaton --</option>
-            <option value="sample_01" selected>Sample 1: Ends with '01' (NFA)</option>
-            <option value="sample_02">Sample 2: Contains '00' or '11' (ε-NFA)</option>
-            <option value="sample_03">Sample 3: Cyclic ε-transitions (Complex ε-NFA)</option>
-            <option value="sample_04">Sample 4: Minimization Candidate (Redundant States)</option>
-          </select>
+          <div class="select-wrapper">
+            <select id="sample-select" class="form-control glass-select">
+              <option value="custom">-- Custom Automaton --</option>
+              <option value="sample_01" selected>Sample 1: Ends with '01' (NFA)</option>
+              <option value="sample_02">Sample 2: Contains '00' or '11' (ε-NFA)</option>
+              <option value="sample_03">Sample 3: Cyclic ε-transitions (Complex ε-NFA)</option>
+              <option value="sample_04">Sample 4: Minimization Candidate (Redundant States)</option>
+            </select>
+          </div>
         </div>
 
         <div class="form-group">
           <label for="nfa-json">NFA Definition (JSON):</label>
-          <textarea id="nfa-json" rows="14"></textarea>
+          <textarea id="nfa-json" rows="12" class="form-control glass-textarea code-editor" spellcheck="false" placeholder="Enter valid JSON automaton definition..."></textarea>
         </div>
 
-        <div>
-          <button id="btn-convert" class="btn-primary">Convert & Minimize</button>
-          <button id="btn-reset" class="btn-secondary">Reset</button>
+        <div class="button-row">
+          <button id="btn-convert" class="btn-primary" type="button">Convert &amp; Minimize</button>
+          <button id="btn-reset" class="btn-secondary" type="button">Reset</button>
         </div>
-      </div>
+      </section>
 
-      <div class="card">
-        <h2>String Simulator & Verification</h2>
+      <!-- Card 2: Regex-to-NFA Converter Placeholder (Milestone M5 Hook) -->
+      <section id="regex-converter-container" class="card glass-card builder-section">
+        <div class="card-header-bar">
+          <h2>Regex to NFA Converter</h2>
+          <span class="badge badge-subtle">Thompson's</span>
+        </div>
+        <p class="section-desc">Parse standard regular expressions into equivalent Thompson NFA.</p>
+        <div class="form-group">
+          <label for="regex-input">Regular Expression:</label>
+          <div class="input-with-button">
+            <input type="text" id="regex-input" class="form-control glass-input" placeholder="e.g. (a|b)*abb" />
+            <button id="btn-regex-convert" class="btn btn-accent" type="button">Build NFA</button>
+          </div>
+          <small class="form-hint">Supports concatenation, union (<code>|</code>), Kleene star (<code>*</code>), plus (<code>+</code>), ε/epsilon.</small>
+        </div>
+      </section>
+
+      <!-- Card 3: Automated Test String Generator Placeholder (Milestone M5 Hook) -->
+      <section id="test-generator-container" class="card glass-card builder-section">
+        <div class="card-header-bar">
+          <h2>Test String Generator</h2>
+          <button id="btn-generate-strings" class="btn btn-outline-accent btn-xs" type="button">Generate Cases</button>
+        </div>
+        <p class="section-desc">Automated BFS exploration of accepted &amp; rejected strings.</p>
+        <div id="test-pills-container" class="test-pills-matrix">
+          <div class="test-pill-section">
+            <span class="pill-group-label text-success">Accepted Strings:</span>
+            <div id="accepted-pills" class="pills-wrapper">
+              <span class="placeholder-pill">Generate strings to preview...</span>
+            </div>
+          </div>
+          <div class="test-pill-section">
+            <span class="pill-group-label text-danger">Rejected Strings:</span>
+            <div id="rejected-pills" class="pills-wrapper">
+              <span class="placeholder-pill">Generate strings to preview...</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Card 4: String Simulator & Verification -->
+      <section class="card glass-card">
+        <div class="card-header-bar">
+          <h2>String Simulator &amp; Verification</h2>
+          <span class="badge badge-subtle">Verifier</span>
+        </div>
         <div class="form-group">
           <label for="sim-input">Input String (w ∈ Σ*):</label>
-          <input type="text" id="sim-input" placeholder="e.g. 10101 (or empty for ε)" />
+          <input type="text" id="sim-input" class="form-control glass-input" placeholder="e.g. 10101 (or empty for ε)" />
         </div>
         <div>
-          <button id="btn-simulate" class="btn-primary">Simulate Step-by-Step</button>
+          <button id="btn-simulate" class="btn-primary" type="button">Simulate Step-by-Step</button>
         </div>
         <div id="sim-verdict-container" style="margin-top: 14px; display: none;"></div>
-      </div>
-    </div>
+      </section>
+    </aside>
 
-    <!-- Right Column: Visualization & Results -->
-    <div>
-      <div class="card">
-        <div class="tabs">
-          <div class="tab active" data-tab="tab-nfa">1. Original NFA</div>
-          <div class="tab" data-tab="tab-conversion">2. Subset Construction</div>
-          <div class="tab" data-tab="tab-dfa">3. Converted DFA</div>
-          <div class="tab" data-tab="tab-minimal">4. Minimal DFA</div>
-          <div class="tab" data-tab="tab-trace">5. Simulation Trace</div>
-        </div>
-
-        <!-- Tab 1: Original NFA -->
-        <div id="tab-nfa" class="tab-content active">
-          <h3>NFA State Transition Diagram</h3>
-          <div id="nfa-diagram" class="diagram-container"></div>
-          <h3 style="margin-top: 20px;">Transition Table & ε-Closures</h3>
-          <div id="nfa-table-view" class="table-wrapper"></div>
-          <div id="epsilon-closures-view" style="margin-top: 14px;"></div>
-        </div>
-
-        <!-- Tab 2: Subset Construction Log -->
-        <div id="tab-conversion" class="tab-content">
-          <h3>Powerset Construction Step-by-Step Matrix</h3>
-          <p style="color: var(--text-muted); font-size: 13px; margin: 6px 0 12px 0;">
-            Deterministic tracking of subset moves: δ<sub>D</sub>(S, a) = ε-closure(∪ δ(s, a))
-          </p>
-          <div id="conversion-table-view" class="table-wrapper"></div>
-          <h4 style="margin-top: 16px;">DFA State to NFA Subset Mapping</h4>
-          <div id="state-mapping-view" class="table-wrapper"></div>
-        </div>
-
-        <!-- Tab 3: Converted DFA -->
-        <div id="tab-dfa" class="tab-content">
-          <h3>Converted DFA State Diagram</h3>
-          <div id="dfa-diagram" class="diagram-container"></div>
-          <h3 style="margin-top: 20px;">DFA Transition Table</h3>
-          <div id="dfa-table-view" class="table-wrapper"></div>
-        </div>
-
-        <!-- Tab 4: Minimal DFA -->
-        <div id="tab-minimal" class="tab-content">
-          <h3>Minimal DFA State Diagram</h3>
-          <div id="min-dfa-diagram" class="diagram-container"></div>
-          <h3 style="margin-top: 20px;">Myhill-Nerode Triangular Equivalence Table</h3>
-          <div id="min-triangular-view" class="table-wrapper"></div>
-          <h3 style="margin-top: 20px;">Minimal DFA Transition Table</h3>
-          <div id="min-dfa-table-view" class="table-wrapper"></div>
-        </div>
-
-        <!-- Tab 5: Simulation Trace -->
-        <div id="tab-trace" class="tab-content">
-          <h3>Dual Trace Comparison (NFA vs Minimal DFA)</h3>
-          <div id="trace-comparison-view">
-            <p style="color: var(--text-muted);">Enter an input string and click 'Simulate Step-by-Step'.</p>
+    <!-- Right Column: Visualization, Interactive Canvas & Results -->
+    <section class="workspace-panel">
+      <!-- Interactive Cytoscape Canvas & Controller Viewport (Milestones M3 & M4) -->
+      <div id="canvas-card" class="card glass-card canvas-workspace-card">
+        <!-- Floating Visual Builder Toolbar (Milestone M5 Hook) -->
+        <div id="builder-toolbar" class="canvas-floating-toolbar glass-panel" aria-label="Visual Graph Builder Toolbar">
+          <div class="toolbar-group">
+            <button id="tool-select" class="toolbar-btn active" title="Select / Move Node" type="button">
+              <span class="tool-icon">↖</span>
+            </button>
+            <button id="tool-add-state" class="toolbar-btn" title="Add State Node" type="button">
+              <span class="tool-icon">○</span> State
+            </button>
+            <button id="tool-add-transition" class="toolbar-btn" title="Add Directed Transition" type="button">
+              <span class="tool-icon">➔</span> Transition
+            </button>
+            <button id="tool-toggle-start" class="toolbar-btn" title="Toggle Start State" type="button">
+              <span class="tool-icon">▶</span> Start
+            </button>
+            <button id="tool-toggle-accept" class="toolbar-btn" title="Toggle Accept State" type="button">
+              <span class="tool-icon">◎</span> Accept
+            </button>
+            <button id="tool-delete" class="toolbar-btn btn-danger-subtle" title="Delete Selected State / Transition" type="button">
+              <span class="tool-icon">🗑</span>
+            </button>
+          </div>
+          <div class="toolbar-separator"></div>
+          <div class="toolbar-group">
+            <button id="tool-relayout" class="toolbar-btn" title="Auto Layout (Dagre)" type="button">
+              <span class="tool-icon">⚡</span> Auto Layout
+            </button>
+            <button id="tool-zoom-fit" class="toolbar-btn" title="Fit to Viewport" type="button">
+              <span class="tool-icon">⛶</span> Fit
+            </button>
           </div>
         </div>
 
-      </div>
-    </div>
-  </div>
+        <!-- Interactive Cytoscape Canvas Container (Milestone M3 Hook) -->
+        <div id="canvas" class="graph-canvas cytoscape-canvas" aria-label="Interactive Graph Canvas Viewport">
+          <div class="canvas-ambient-placeholder">
+            <div class="canvas-hint-icon">⚡</div>
+            <div class="canvas-hint-text">Interactive Automata Canvas Viewport (M3 Cytoscape.js)</div>
+            <div class="canvas-hint-sub">Static SVG diagrams &amp; transition tables are rendered below</div>
+          </div>
+        </div>
 
+        <!-- Docked Simulation Playback Controller (Milestone M4 Hook) -->
+        <div id="simulation-playback-controls" class="canvas-docked-playback glass-panel" aria-label="Simulation Playback Controller">
+          <!-- Input Tape Ticker Bar -->
+          <div class="playback-tape-bar">
+            <span class="tape-label">Input Tape:</span>
+            <div id="simulation-tape" class="simulation-tape-ticker">
+              <span class="tape-cell tape-empty">ε</span>
+            </div>
+          </div>
+
+          <!-- Playback Controls Row -->
+          <div class="playback-controls-row">
+            <button id="btn-playback-step-back" class="playback-btn" title="Step Backward (Ctrl+Left)" type="button">
+              <span class="ctrl-icon">⏮</span>
+            </button>
+            <button id="btn-playback-play" class="playback-btn playback-btn-primary" title="Play / Pause (Space)" type="button">
+              <span class="ctrl-icon">▶</span>
+            </button>
+            <button id="btn-playback-step-fwd" class="playback-btn" title="Step Forward (Ctrl+Right)" type="button">
+              <span class="ctrl-icon">⏭</span>
+            </button>
+            <button id="btn-playback-reset" class="playback-btn" title="Reset Simulation" type="button">
+              <span class="ctrl-icon">↺</span>
+            </button>
+
+            <!-- Progress Scrubber Slider -->
+            <div class="playback-scrubber-group">
+              <input type="range" id="playback-scrubber" class="playback-scrubber-slider" min="0" max="0" value="0" step="1" title="Simulation Progress Scrubber" />
+              <span id="playback-step-counter" class="step-counter-badge">Step 0 / 0</span>
+            </div>
+
+            <!-- Speed Multiplier Dropdown -->
+            <div class="playback-speed-group">
+              <label for="playback-speed-select" class="speed-label">Speed:</label>
+              <select id="playback-speed-select" class="speed-select glass-select">
+                <option value="0.25">0.25x</option>
+                <option value="0.5">0.5x</option>
+                <option value="1.0" selected>1.0x</option>
+                <option value="1.5">1.5x</option>
+                <option value="2.0">2.0x</option>
+                <option value="3.0">3.0x</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabbed Analysis & Results Card (100% Backward Compatibility with app.js) -->
+      <div class="card glass-card results-card">
+        <!-- View Switch Navigation Tabs -->
+        <nav class="tabs glass-tabs" role="tablist">
+          <div class="tab active" data-tab="tab-nfa" role="tab" aria-selected="true" tabindex="0">1. Original NFA</div>
+          <div class="tab" data-tab="tab-conversion" role="tab" aria-selected="false" tabindex="0">2. Subset Construction</div>
+          <div class="tab" data-tab="tab-dfa" role="tab" aria-selected="false" tabindex="0">3. Converted DFA</div>
+          <div class="tab" data-tab="tab-minimal" role="tab" aria-selected="false" tabindex="0">4. Minimal DFA</div>
+          <div class="tab" data-tab="tab-trace" role="tab" aria-selected="false" tabindex="0">5. Simulation Trace</div>
+        </nav>
+
+        <!-- Tab 1: Original NFA -->
+        <div id="tab-nfa" class="tab-content active" role="tabpanel">
+          <section class="analysis-section">
+            <h3 class="section-heading">NFA State Transition Diagram</h3>
+            <div id="nfa-diagram" class="diagram-container glass-diagram-viewport"></div>
+          </section>
+
+          <details class="collapsible-drawer glass-drawer" open>
+            <summary class="drawer-header">
+              <span class="drawer-title">Transition Table &amp; ε-Closures</span>
+              <span class="drawer-toggle-icon">▾</span>
+            </summary>
+            <div class="drawer-body">
+              <div id="nfa-table-view" class="table-wrapper glass-table-wrapper"></div>
+              <div id="epsilon-closures-view" class="closure-summary-wrapper" style="margin-top: 14px;"></div>
+            </div>
+          </details>
+        </div>
+
+        <!-- Tab 2: Subset Construction Log -->
+        <div id="tab-conversion" class="tab-content" role="tabpanel">
+          <section class="analysis-section">
+            <details class="collapsible-drawer glass-drawer" open>
+              <summary class="drawer-header">
+                <span class="drawer-title">Powerset Construction Step-by-Step Matrix</span>
+                <span class="drawer-toggle-icon">▾</span>
+              </summary>
+              <div class="drawer-body">
+                <p class="matrix-formula-caption" style="color: var(--text-muted); font-size: 13px; margin: 6px 0 12px 0;">
+                  Deterministic tracking of subset moves: δ<sub>D</sub>(S, a) = ε-closure(∪ δ(s, a))
+                </p>
+                <div id="conversion-table-view" class="table-wrapper glass-table-wrapper"></div>
+              </div>
+            </details>
+
+            <details class="collapsible-drawer glass-drawer" open style="margin-top: 16px;">
+              <summary class="drawer-header">
+                <span class="drawer-title">DFA State to NFA Subset Mapping</span>
+                <span class="drawer-toggle-icon">▾</span>
+              </summary>
+              <div class="drawer-body">
+                <div id="state-mapping-view" class="table-wrapper glass-table-wrapper"></div>
+              </div>
+            </details>
+          </section>
+        </div>
+
+        <!-- Tab 3: Converted DFA -->
+        <div id="tab-dfa" class="tab-content" role="tabpanel">
+          <section class="analysis-section">
+            <h3 class="section-heading">Converted DFA State Diagram</h3>
+            <div id="dfa-diagram" class="diagram-container glass-diagram-viewport"></div>
+          </section>
+
+          <details class="collapsible-drawer glass-drawer" open>
+            <summary class="drawer-header">
+              <span class="drawer-title">DFA Transition Table</span>
+              <span class="drawer-toggle-icon">▾</span>
+            </summary>
+            <div class="drawer-body">
+              <div id="dfa-table-view" class="table-wrapper glass-table-wrapper"></div>
+            </div>
+          </details>
+        </div>
+
+        <!-- Tab 4: Minimal DFA -->
+        <div id="tab-minimal" class="tab-content" role="tabpanel">
+          <section class="analysis-section">
+            <h3 class="section-heading">Minimal DFA State Diagram</h3>
+            <div id="min-dfa-diagram" class="diagram-container glass-diagram-viewport"></div>
+          </section>
+
+          <details class="collapsible-drawer glass-drawer" open>
+            <summary class="drawer-header">
+              <span class="drawer-title">Myhill-Nerode Triangular Equivalence Table</span>
+              <span class="drawer-toggle-icon">▾</span>
+            </summary>
+            <div class="drawer-body">
+              <div id="min-triangular-view" class="table-wrapper glass-table-wrapper"></div>
+            </div>
+          </details>
+
+          <details class="collapsible-drawer glass-drawer" open style="margin-top: 16px;">
+            <summary class="drawer-header">
+              <span class="drawer-title">Minimal DFA Transition Table</span>
+              <span class="drawer-toggle-icon">▾</span>
+            </summary>
+            <div class="drawer-body">
+              <div id="min-dfa-table-view" class="table-wrapper glass-table-wrapper"></div>
+            </div>
+          </details>
+        </div>
+
+        <!-- Tab 5: Simulation Trace -->
+        <div id="tab-trace" class="tab-content" role="tabpanel">
+          <section class="analysis-section">
+            <h3 class="section-heading">Dual Trace Comparison (NFA vs Minimal DFA)</h3>
+            <div id="trace-comparison-view" class="glass-trace-viewport">
+              <p style="color: var(--text-muted);">Enter an input string and click 'Simulate Step-by-Step'.</p>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Non-blocking Toast Notification Root Container -->
+  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Central Application Script -->
   <script src="/static/app.js"></script>
 </body>
 </html>
