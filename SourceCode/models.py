@@ -17,7 +17,7 @@ class AutomatonType(Enum):
 
 
 EPSILON = "ε"
-EPSILON_VARIANTS = {"ε", "e", "E", "eps", "epsilon", "EPSILON", ""}
+EPSILON_VARIANTS = {"ε", "eps", "epsilon", "EPSILON", ""}
 
 
 def is_epsilon(symbol: str) -> bool:
