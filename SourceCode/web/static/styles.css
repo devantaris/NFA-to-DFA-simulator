@@ -564,26 +564,51 @@ button, .btn {
   user-select: none;
 }
 
-.string-pill.accepted {
+.string-pill.accepted,
+.pill-accepted {
   background: var(--neon-emerald-subtle);
   color: var(--neon-emerald-hover);
   border-color: var(--neon-emerald-border);
 }
 
-.string-pill.accepted:hover {
+.string-pill.accepted:hover,
+.pill-accepted:hover {
   box-shadow: 0 0 10px rgba(16, 185, 129, 0.35);
   transform: translateY(-1px);
 }
 
-.string-pill.rejected {
+.string-pill.rejected,
+.pill-rejected {
   background: var(--neon-rose-subtle);
   color: var(--neon-rose-hover);
   border-color: var(--neon-rose-border);
 }
 
-.string-pill.rejected:hover {
+.string-pill.rejected:hover,
+.pill-rejected:hover {
   box-shadow: 0 0 10px rgba(244, 63, 94, 0.35);
   transform: translateY(-1px);
+}
+
+/* Active Highlighted Test String Pill */
+.string-pill.active,
+.string-pill.pill-active,
+.pill-accepted.active,
+.pill-rejected.active {
+  box-shadow: 0 0 12px var(--neon-cyan), inset 0 0 4px rgba(255, 255, 255, 0.25);
+  transform: scale(1.05);
+}
+
+.string-pill.accepted.active,
+.pill-accepted.active {
+  box-shadow: 0 0 14px var(--neon-emerald-glow), inset 0 0 4px rgba(16, 185, 129, 0.4);
+  border-color: var(--neon-emerald);
+}
+
+.string-pill.rejected.active,
+.pill-rejected.active {
+  box-shadow: 0 0 14px var(--neon-rose-glow), inset 0 0 4px rgba(244, 63, 94, 0.4);
+  border-color: var(--neon-rose);
 }
 
 /* --------------------------------------------------------------------------
@@ -662,6 +687,142 @@ button, .btn {
   height: 20px;
   background: var(--glass-border);
   margin: 0 4px;
+}
+
+/* Glassmorphic Transition Symbol Popover (M5 Visual Graph Builder) */
+.builder-popover {
+  position: absolute;
+  z-index: 1000;
+  min-width: 230px;
+  padding: 12px 14px;
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--neon-cyan-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.75), 0 0 20px rgba(6, 182, 212, 0.25);
+  color: var(--text-main);
+  animation: popoverFadeIn 0.18s ease-out;
+}
+
+@keyframes popoverFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.builder-popover-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.builder-popover-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-main);
+}
+
+.builder-popover-title .badge {
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.popover-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 16px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 4px;
+  border-radius: 4px;
+  transition: all var(--transition-fast);
+}
+
+.popover-close-btn:hover {
+  color: var(--neon-rose-hover);
+  background: rgba(244, 63, 94, 0.15);
+}
+
+.builder-popover-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.builder-popover-pills {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.quick-sym-btn {
+  flex: 1;
+  padding: 5px 8px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--neon-cyan);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quick-sym-btn:hover {
+  background: var(--neon-cyan-subtle);
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.35);
+  transform: translateY(-1px);
+}
+
+.builder-popover-input-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.popover-sym-input {
+  flex: 1;
+  padding: 5px 8px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  height: 30px;
+}
+
+.popover-add-btn {
+  padding: 5px 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  height: 30px;
+  white-space: nowrap;
+}
+
+/* Canvas Mode Cursors */
+.graph-canvas.mode-add-state {
+  cursor: crosshair !important;
+}
+
+.graph-canvas.mode-add-transition {
+  cursor: crosshair !important;
 }
 
 /* Interactive Graph Canvas Viewport (M3 Hook) */

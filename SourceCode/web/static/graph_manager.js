@@ -185,8 +185,9 @@ class GraphManager {
       this.cy.add(elements);
     });
 
-    // 4. Run animated Dagre layout with smooth cubic-bezier easing
-    this.runLayout('dagre', Object.assign({
+    // 4. Run layout with smooth easing (defaults to dagre, supports preset)
+    const layoutName = options.layout || options.layoutName || 'dagre';
+    this.runLayout(layoutName, Object.assign({
       animate: options.animate !== false,
       duration: options.duration || this.options.animationDuration
     }, options));

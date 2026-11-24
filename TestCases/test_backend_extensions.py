@@ -483,6 +483,46 @@ class TestWebAppEndpoints(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertTrue(data.get("is_equivalent"))
 
+    def test_static_graph_builder_serving(self):
+        url = f"http://127.0.0.1:{self.port}/static/graph_builder.js"
+        req = urllib.request.Request(url, method="GET")
+        with urllib.request.urlopen(req) as resp:
+            self.assertEqual(resp.status, 200)
+            headers = dict(resp.headers)
+            content_type = headers.get("Content-Type", "") or headers.get("content-type", "")
+            self.assertTrue("javascript" in content_type or "text/plain" in content_type)
+            content = resp.read().decode("utf-8")
+            self.assertIn("class GraphBuilder", content)
+            self.assertIn("syncCanvasToModel", content)
+            self.assertIn("syncModelToCanvas", content)
+
+
+class TestMilestone5StaticIntegrity(unittest.TestCase):
+    """Static asset and DOM integrity checks for Milestone 5."""
+
+    def test_index_html_includes_graph_builder_and_regex_button(self):
+        index_path = ROOT_DIR / "SourceCode" / "web" / "static" / "index.html"
+        self.assertTrue(index_path.exists())
+        content = index_path.read_text(encoding="utf-8")
+        self.assertIn("graph_builder.js", content)
+        self.assertIn('id="btn-convert-regex"', content)
+        self.assertIn('id="btn-generate-strings"', content)
+        self.assertIn('id="accepted-pills"', content)
+        self.assertIn('id="rejected-pills"', content)
+        self.assertIn('id="tool-select"', content)
+        self.assertIn('id="tool-add-state"', content)
+        self.assertIn('id="tool-add-transition"', content)
+
+    def test_styles_css_includes_milestone_5_rules(self):
+        css_path = ROOT_DIR / "SourceCode" / "web" / "static" / "styles.css"
+        self.assertTrue(css_path.exists())
+        content = css_path.read_text(encoding="utf-8")
+        self.assertIn(".pill-accepted", content)
+        self.assertIn(".pill-rejected", content)
+        self.assertIn(".builder-popover", content)
+        self.assertIn(".mode-add-state", content)
+        self.assertIn(".mode-add-transition", content)
+
 
 if __name__ == "__main__":
     unittest.main()

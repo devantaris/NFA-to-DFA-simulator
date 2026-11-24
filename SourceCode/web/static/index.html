@@ -100,7 +100,7 @@
           <label for="regex-input">Regular Expression:</label>
           <div class="input-with-button">
             <input type="text" id="regex-input" class="form-control glass-input" placeholder="e.g. (a|b)*abb" />
-            <button id="btn-regex-convert" class="btn btn-accent" type="button">Build NFA</button>
+            <button id="btn-convert-regex" class="btn btn-accent" type="button">Build NFA</button>
           </div>
           <small class="form-hint">Supports concatenation, union (<code>|</code>), Kleene star (<code>*</code>), plus (<code>+</code>), ε/epsilon.</small>
         </div>
@@ -383,6 +383,8 @@
 
   <!-- Graph Manager (Cytoscape.js & Dagre Engine Wrapper) -->
   <script src="/static/graph_manager.js"></script>
+  <!-- Visual Graph Builder & Authoring Suite (Milestone M5) -->
+  <script src="/static/graph_builder.js"></script>
   <!-- Simulation Playback Controller (Milestone M4) -->
   <script src="/static/simulator_player.js"></script>
   <!-- Central Application Script -->

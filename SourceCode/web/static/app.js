@@ -68,6 +68,7 @@ let currentConversionData = null;
 let vizInstance = null;
 let graphManager = null;
 let simulatorPlayer = null;
+let graphBuilder = null;
 let currentActiveView = "nfa";
 
 // Initialize Viz.js if available
@@ -83,6 +84,8 @@ document.addEventListener("DOMContentLoaded", () => {
   setupButtons();
   setupExportButtons();
   setupCanvasControls();
+  setupRegexConverter();
+  setupTestStringGenerator();
 
   // Load sample 1 initially
   loadSample("sample_01");
@@ -104,6 +107,23 @@ function initGraphManager() {
       }
       if (simulatorPlayer && typeof simulatorPlayer.setGraphManager === "function") {
         simulatorPlayer.setGraphManager(graphManager);
+      }
+
+      // Initialize Milestone 5 Visual Graph Builder wrapping GraphManager
+      if (typeof GraphBuilder !== "undefined") {
+        try {
+          graphBuilder = new GraphBuilder({
+            graphManager: graphManager,
+            jsonEditorId: "nfa-json",
+            sampleSelectId: "sample-select"
+          });
+          graphBuilder.init();
+          if (typeof window !== "undefined") {
+            window.graphBuilder = graphBuilder;
+          }
+        } catch (builderErr) {
+          console.error("Failed to initialize GraphBuilder:", builderErr);
+        }
       }
     } catch (err) {
       console.error("Failed to initialize GraphManager:", err);
@@ -700,4 +720,216 @@ if (typeof window !== "undefined") {
 function escapeHtml(text) {
   const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
   return text.replace(/[&<>"']/g, m => map[m]);
+}
+
+// ---------------------------------------------------------------------------
+// Milestone 5: Regex-to-NFA UI Integration
+// ---------------------------------------------------------------------------
+
+function setupRegexConverter() {
+  const btn = document.getElementById("btn-convert-regex") || document.getElementById("btn-regex-convert");
+  const input = document.getElementById("regex-input");
+
+  if (btn) {
+    btn.addEventListener("click", () => {
+      convertRegexToNFA();
+    });
+  }
+
+  if (input) {
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        convertRegexToNFA();
+      }
+    });
+  }
+}
+
+async function convertRegexToNFA() {
+  const input = document.getElementById("regex-input");
+  if (!input) return;
+
+  const regexStr = input.value.trim();
+  if (!regexStr) {
+    showToast("Please enter a regular expression to convert", "warning");
+    input.focus();
+    return;
+  }
+
+  const btn = document.getElementById("btn-convert-regex") || document.getElementById("btn-regex-convert");
+  const origText = btn ? btn.textContent : "Build NFA";
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Building...";
+  }
+
+  try {
+    const res = await fetch("/api/regex-to-nfa", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ regex: regexStr })
+    });
+    const data = await res.json();
+
+    if (!data.success || data.error) {
+      showToast("Regex Conversion Error: " + (data.error || "Failed to convert regex"), "error");
+      return;
+    }
+
+    const nfa = data.nfa;
+
+    // 1. Update NFA JSON textarea
+    const jsonArea = document.getElementById("nfa-json");
+    if (jsonArea) {
+      jsonArea.value = JSON.stringify(nfa, null, 2);
+    }
+
+    // 2. Set sample select to custom
+    const sampleSelect = document.getElementById("sample-select");
+    if (sampleSelect) {
+      sampleSelect.value = "custom";
+    }
+
+    // 3. Switch active view tab to Original NFA tab
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    document.querySelectorAll(".tab-content").forEach(tc => tc.classList.remove("active"));
+    const nfaTab = document.querySelector('[data-tab="tab-nfa"]');
+    if (nfaTab) nfaTab.classList.add("active");
+    const nfaContent = document.getElementById("tab-nfa");
+    if (nfaContent) nfaContent.classList.add("active");
+
+    // 4. Run conversion pipeline (updates DFA, Minimal DFA, and Cytoscape canvas)
+    await convertCurrentNFA();
+
+    showToast(`Converted regex "${regexStr}" to Thompson NFA successfully`, "success");
+  } catch (err) {
+    console.error("Regex conversion failed:", err);
+    showToast("Regex conversion request failed: " + err.message, "error");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = origText;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Milestone 5: Automated Test String Generator UI Integration
+// ---------------------------------------------------------------------------
+
+function setupTestStringGenerator() {
+  const btn = document.getElementById("btn-generate-strings");
+  if (btn) {
+    btn.addEventListener("click", () => {
+      generateTestStrings();
+    });
+  }
+}
+
+async function generateTestStrings() {
+  const jsonText = document.getElementById("nfa-json")?.value;
+  if (!jsonText) {
+    showToast("No automaton definition found in editor", "warning");
+    return;
+  }
+
+  let parsedNFA;
+  try {
+    parsedNFA = JSON.parse(jsonText);
+  } catch (err) {
+    showToast("Invalid JSON in automaton definition: " + err.message, "error");
+    return;
+  }
+
+  const btn = document.getElementById("btn-generate-strings");
+  const origText = btn ? btn.textContent : "Generate Cases";
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Generating...";
+  }
+
+  try {
+    const res = await fetch("/api/generate-strings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        nfa: parsedNFA,
+        max_accepted: 3,
+        max_rejected: 3
+      })
+    });
+    const data = await res.json();
+
+    if (!data.success || data.error) {
+      showToast("String Generation Error: " + (data.error || "Failed to generate strings"), "error");
+      return;
+    }
+
+    renderTestPills(data.accepted_strings || [], data.rejected_strings || []);
+    showToast(`Generated ${(data.accepted_strings || []).length} accepted and ${(data.rejected_strings || []).length} rejected test cases`, "success");
+  } catch (err) {
+    console.error("Test string generation failed:", err);
+    showToast("Failed to generate test strings: " + err.message, "error");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = origText;
+    }
+  }
+}
+
+function renderTestPills(acceptedStrings, rejectedStrings) {
+  const acceptedContainer = document.getElementById("accepted-pills");
+  const rejectedContainer = document.getElementById("rejected-pills");
+
+  if (acceptedContainer) {
+    acceptedContainer.innerHTML = "";
+    if (acceptedStrings.length === 0) {
+      acceptedContainer.innerHTML = '<span class="placeholder-pill">No accepted strings (empty language)</span>';
+    } else {
+      acceptedStrings.forEach(str => {
+        const pill = createTestPill(str, "accepted");
+        acceptedContainer.appendChild(pill);
+      });
+    }
+  }
+
+  if (rejectedContainer) {
+    rejectedContainer.innerHTML = "";
+    if (rejectedStrings.length === 0) {
+      rejectedContainer.innerHTML = '<span class="placeholder-pill">No rejected strings (universal language)</span>';
+    } else {
+      rejectedStrings.forEach(str => {
+        const pill = createTestPill(str, "rejected");
+        rejectedContainer.appendChild(pill);
+      });
+    }
+  }
+}
+
+function createTestPill(str, type) {
+  const pill = document.createElement("button");
+  pill.type = "button";
+  pill.className = `string-pill ${type} pill-${type}`;
+  pill.textContent = str === "" ? "ε" : str;
+  pill.title = str === "" ? "Empty string (ε) — click to test" : `Test string: "${str}" — click to simulate`;
+  pill.dataset.value = str;
+
+  pill.addEventListener("click", () => {
+    // Highlight clicked pill
+    document.querySelectorAll(".string-pill").forEach(p => p.classList.remove("active", "pill-active"));
+    pill.classList.add("active", "pill-active");
+
+    // Populate sim-input
+    const simInput = document.getElementById("sim-input");
+    if (simInput) {
+      simInput.value = str;
+    }
+
+    // Trigger simulation playback
+    simulateInputString();
+  });
+
+  return pill;
 }
