@@ -11,7 +11,7 @@ import threading
 import unittest
 import urllib.error
 import urllib.request
-from http.server import HTTPServer
+from http.server import ThreadingHTTPServer
 from typing import Any, Dict, Optional, Tuple, Union
 
 from SourceCode.web.app import AutomataRequestHandler
@@ -30,13 +30,14 @@ class LiveServerHarness:
 
     def __init__(self, host: str = "127.0.0.1"):
         self.host = host
-        self.server: Optional[HTTPServer] = None
+        self.server: Optional[ThreadingHTTPServer] = None
         self.thread: Optional[threading.Thread] = None
         self.port: int = 0
 
     def start(self) -> str:
         """Starts the HTTP server bound to an OS-assigned ephemeral port."""
-        self.server = HTTPServer((self.host, 0), SilentAutomataRequestHandler)
+        self.server = ThreadingHTTPServer((self.host, 0), SilentAutomataRequestHandler)
+        self.server.daemon_threads = True
         self.port = self.server.server_address[1]
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
@@ -163,6 +164,10 @@ class BaseE2ETestCase(unittest.TestCase):
     server_harness: Optional[LiveServerHarness] = None
     client: Optional[AutomataApiClient] = None
     base_url: str = ""
+
+    @property
+    def harness(self) -> Optional[LiveServerHarness]:
+        return self.server_harness
 
     @classmethod
     def setUpClass(cls) -> None:

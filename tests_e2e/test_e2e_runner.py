@@ -1,10 +1,11 @@
 """Standalone E2E Test Suite Runner for NFA to DFA Simulator.
 
-Discovers and executes all 4 tiers of opaque-box E2E tests:
+Discovers and executes all 5 tiers of opaque-box E2E and adversarial tests:
 - Tier 1: Feature Coverage (Static Assets, Samples, Convert, Simulate, Regex, Strings)
 - Tier 2: Boundary & Corner Cases (Empty strings, Epsilon, Single-state, Traps, Schemas)
 - Tier 3: Cross-Feature Integration Workflows (Pipelines, Fault Injection, Equivalence)
 - Tier 4: Real-World Applications (Modulo 3, Substring 001, Alternating, Tokenizer, TCP)
+- Tier 5: Adversarial Stress & Security (Deep regex nesting, Traversal, Concurrency bursts, Payloads)
 
 Usage:
     python tests_e2e/test_e2e_runner.py
@@ -17,10 +18,12 @@ import time
 import unittest
 from pathlib import Path
 
-
 ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
+
+# Explicit import of Tier 5 module for verification and direct suite inclusion
+from tests_e2e import test_tier5_adversarial
 
 
 # ANSI terminal styling
@@ -42,7 +45,7 @@ def main() -> int:
     suite = loader.discover(start_dir=start_dir, pattern="test_tier*.py")
 
     print("\n" + "=" * 78)
-    print(f"{COLOR_BOLD}{COLOR_CYAN}    NFA TO DFA SIMULATOR — E2E TEST SUITE RUNNER (TIERS 1–4){COLOR_RESET}")
+    print(f"{COLOR_BOLD}{COLOR_CYAN}    NFA TO DFA SIMULATOR — E2E TEST SUITE RUNNER (TIERS 1–5){COLOR_RESET}")
     print("=" * 78)
     print(f"Directory: {start_dir}")
     print(f"Python:    {sys.version.split()[0]} on {sys.platform}\n")

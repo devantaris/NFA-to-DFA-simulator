@@ -8,7 +8,8 @@ from __future__ import annotations
 import json
 import mimetypes
 import os
-from http.server import HTTPServer, BaseHTTPRequestHandler
+import urllib.parse
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 from typing import Any, Dict
 
@@ -57,10 +58,18 @@ class AutomataRequestHandler(BaseHTTPRequestHandler):
         if path in ("/", "/index.html"):
             self._serve_file(STATIC_DIR / "index.html", "text/html")
         elif path.startswith("/static/"):
-            rel = path[len("/static/"):]
-            file_path = STATIC_DIR / rel
-            mime, _ = mimetypes.guess_type(str(file_path))
-            self._serve_file(file_path, mime or "application/octet-stream")
+            rel = urllib.parse.unquote(path[len("/static/"):].lstrip("/\\"))
+            try:
+                resolved_static = STATIC_DIR.resolve()
+                target_path = (STATIC_DIR / rel).resolve()
+                if resolved_static not in target_path.parents and target_path != resolved_static:
+                    self.send_error(403, "Access Denied")
+                    return
+            except Exception:
+                self.send_error(400, "Bad Request")
+                return
+            mime, _ = mimetypes.guess_type(str(target_path))
+            self._serve_file(target_path, mime or "application/octet-stream")
         elif path == "/api/samples":
             self._handle_samples()
         else:
@@ -68,8 +77,24 @@ class AutomataRequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         path = self.path.split("?")[0]
-        content_length = int(self.headers.get("Content-Length", 0))
-        body = self.rfile.read(content_length).decode("utf-8") if content_length > 0 else "{}"
+        try:
+            content_length = int(self.headers.get("Content-Length", 0))
+            if content_length < 0:
+                self._send_json({"error": "Invalid Content-Length header", "success": False}, status=400)
+                return
+        except (ValueError, TypeError):
+            self._send_json({"error": "Invalid Content-Length header", "success": False}, status=400)
+            return
+
+        if content_length > 0:
+            raw_bytes = self.rfile.read(content_length)
+            try:
+                body = raw_bytes.decode("utf-8")
+            except UnicodeDecodeError:
+                self._send_json({"error": "Payload must be valid UTF-8", "success": False}, status=400)
+                return
+        else:
+            body = "{}"
 
         try:
             data = json.loads(body)
@@ -241,7 +266,8 @@ class AutomataRequestHandler(BaseHTTPRequestHandler):
 
 def run_web_server(host: str = "127.0.0.1", port: int = 8000) -> None:
     server_address = (host, port)
-    httpd = HTTPServer(server_address, AutomataRequestHandler)
+    httpd = ThreadingHTTPServer(server_address, AutomataRequestHandler)
+    httpd.daemon_threads = True
     print(f"\n========================================================================")
     print(f" CSET302 Automata Theory Simulator Web Interface is running!")
     print(f" Access in your browser: http://{host}:{port}")
