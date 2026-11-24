@@ -192,50 +192,72 @@
           </div>
         </div>
 
-        <!-- Docked Simulation Playback Controller (Milestone M4 Hook) -->
+        <!-- Docked Simulation Playback Controller (Milestone M4) -->
         <div id="simulation-playback-controls" class="canvas-docked-playback glass-panel" aria-label="Simulation Playback Controller">
           <!-- Input Tape Ticker Bar -->
           <div class="playback-tape-bar">
             <span class="tape-label">Input Tape:</span>
-            <div id="simulation-tape" class="simulation-tape-ticker">
-              <span class="tape-cell tape-empty">ε</span>
+            <div id="simulation-tape" class="simulation-tape-ticker" role="region" aria-label="Simulation Tape Visualizer">
+              <span class="tape-cell tape-empty tape-epsilon">ε</span>
             </div>
           </div>
 
           <!-- Playback Controls Row -->
           <div class="playback-controls-row">
-            <button id="btn-playback-step-back" class="playback-btn" title="Step Backward (Ctrl+Left)" type="button">
+            <button id="btn-step-bwd" class="playback-btn" title="Step Backward (Left Arrow)" type="button" aria-label="Step Backward">
               <span class="ctrl-icon">⏮</span>
             </button>
-            <button id="btn-playback-play" class="playback-btn playback-btn-primary" title="Play / Pause (Space)" type="button">
-              <span class="ctrl-icon">▶</span>
+            <button id="btn-play" class="playback-btn playback-btn-primary" title="Play / Pause (Space)" type="button" aria-label="Play or Pause">
+              <span id="play-btn-icon" class="ctrl-icon">▶</span>
             </button>
-            <button id="btn-playback-step-fwd" class="playback-btn" title="Step Forward (Ctrl+Right)" type="button">
+            <button id="btn-pause" class="playback-btn" title="Pause" type="button" aria-label="Pause" style="display: none;">
+              <span class="ctrl-icon">⏸</span>
+            </button>
+            <button id="btn-step-fwd" class="playback-btn" title="Step Forward (Right Arrow)" type="button" aria-label="Step Forward">
               <span class="ctrl-icon">⏭</span>
             </button>
-            <button id="btn-playback-reset" class="playback-btn" title="Reset Simulation" type="button">
+            <button id="btn-reset-sim" class="playback-btn" title="Reset Simulation (Home / Esc)" type="button" aria-label="Reset Simulation">
               <span class="ctrl-icon">↺</span>
             </button>
 
             <!-- Progress Scrubber Slider -->
             <div class="playback-scrubber-group">
-              <input type="range" id="playback-scrubber" class="playback-scrubber-slider" min="0" max="0" value="0" step="1" title="Simulation Progress Scrubber" />
+              <input type="range" id="sim-scrubber" class="playback-scrubber-slider" min="0" max="0" value="0" step="1" title="Simulation Progress Scrubber" aria-label="Simulation Progress Scrubber" />
               <span id="playback-step-counter" class="step-counter-badge">Step 0 / 0</span>
             </div>
 
             <!-- Speed Multiplier Dropdown -->
             <div class="playback-speed-group">
-              <label for="playback-speed-select" class="speed-label">Speed:</label>
-              <select id="playback-speed-select" class="speed-select glass-select">
+              <label for="sim-speed" class="speed-label">Speed:</label>
+              <select id="sim-speed" class="speed-select glass-select" aria-label="Playback Speed">
                 <option value="0.25">0.25x</option>
                 <option value="0.5">0.5x</option>
                 <option value="1.0" selected>1.0x</option>
                 <option value="1.5">1.5x</option>
                 <option value="2.0">2.0x</option>
-                <option value="3.0">3.0x</option>
+                <option value="4.0">4.0x</option>
               </select>
             </div>
           </div>
+
+          <!-- Step Details Card (Milestone M4) -->
+          <div id="step-details" class="simulation-step-details glass-card-nested" style="display: none;">
+            <div class="step-details-header">
+              <span id="step-info-badge" class="step-badge">Step 0</span>
+              <span id="step-symbol-badge" class="symbol-badge">Initial State</span>
+              <span id="step-states-badge" class="states-badge">Active: { }</span>
+            </div>
+            <div class="step-details-body">
+              <p id="step-description-text" class="step-description">Load and simulate an automaton to begin playback.</p>
+              <div class="step-meta-row">
+                <span id="step-remaining-text" class="step-remaining">Remaining w: <code>ε</code></span>
+                <span id="step-model-tag" class="step-view-tag">Model: <strong>Minimal DFA</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Prominent Glowing Verdict Card (Milestone M4) -->
+          <div id="simulation-verdict" class="simulation-verdict-card" style="display: none;"></div>
         </div>
       </div>
 
@@ -361,6 +383,8 @@
 
   <!-- Graph Manager (Cytoscape.js & Dagre Engine Wrapper) -->
   <script src="/static/graph_manager.js"></script>
+  <!-- Simulation Playback Controller (Milestone M4) -->
+  <script src="/static/simulator_player.js"></script>
   <!-- Central Application Script -->
   <script src="/static/app.js"></script>
 </body>

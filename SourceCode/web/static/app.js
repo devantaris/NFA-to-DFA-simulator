@@ -67,6 +67,7 @@ const SAMPLE_AUTOMATA = {
 let currentConversionData = null;
 let vizInstance = null;
 let graphManager = null;
+let simulatorPlayer = null;
 let currentActiveView = "nfa";
 
 // Initialize Viz.js if available
@@ -76,6 +77,7 @@ if (typeof Viz !== "undefined") {
 
 document.addEventListener("DOMContentLoaded", () => {
   initGraphManager();
+  initSimulatorPlayer();
   setupTabs();
   setupSampleSelector();
   setupButtons();
@@ -97,11 +99,35 @@ function initGraphManager() {
     try {
       graphManager = new GraphManager(container);
       graphManager.init();
+      if (typeof window !== "undefined") {
+        window.graphManager = graphManager;
+      }
+      if (simulatorPlayer && typeof simulatorPlayer.setGraphManager === "function") {
+        simulatorPlayer.setGraphManager(graphManager);
+      }
     } catch (err) {
       console.error("Failed to initialize GraphManager:", err);
     }
   } else {
     console.info("GraphManager class not yet loaded.");
+  }
+}
+
+function initSimulatorPlayer() {
+  if (typeof SimulatorPlayer !== "undefined") {
+    try {
+      simulatorPlayer = new SimulatorPlayer({
+        graphManager: graphManager
+      });
+      simulatorPlayer.init();
+      if (typeof window !== "undefined") {
+        window.simulatorPlayer = simulatorPlayer;
+      }
+    } catch (err) {
+      console.error("Failed to initialize SimulatorPlayer:", err);
+    }
+  } else {
+    console.info("SimulatorPlayer class not yet loaded.");
   }
 }
 
@@ -164,6 +190,11 @@ function syncGraphWithTab(tabId) {
         graphManager.loadAutomaton(currentConversionData.nfa, "nfa");
       }
       break;
+  }
+
+  // Synchronize simulation playback view
+  if (simulatorPlayer && typeof simulatorPlayer.switchView === "function") {
+    simulatorPlayer.switchView(currentActiveView);
   }
 }
 
@@ -299,6 +330,10 @@ async function convertCurrentNFA() {
     }
 
     currentConversionData = data;
+    if (simulatorPlayer) {
+      simulatorPlayer.pause();
+      simulatorPlayer.reset();
+    }
     renderNFAView(data);
     renderConversionView(data);
     renderDFAView(data);
@@ -508,6 +543,13 @@ async function simulateInputString() {
 
     // Sync graph with trace tab
     syncGraphWithTab("tab-trace");
+
+    // Initialize SimulatorPlayer with trace data
+    if (simulatorPlayer) {
+      simulatorPlayer.loadSimulation(data, currentActiveView);
+    }
+
+    showToast("Simulation trace generated successfully", "success");
   } catch (err) {
     showToast("Simulation request failed: " + err.message, "error");
   }
@@ -565,8 +607,25 @@ function renderSimulationTrace(data) {
 
   document.getElementById("trace-comparison-view").innerHTML = html;
 
-  // Highlight simulation final state on active graph canvas if available
-  if (graphManager && dfaSim && dfaSim.trace && dfaSim.trace.length > 0) {
+  // Enable click-to-seek on trace step cards
+  document.querySelectorAll(".trace-step").forEach(stepCard => {
+    stepCard.style.cursor = "pointer";
+    stepCard.title = "Click to jump playback to this step";
+    stepCard.addEventListener("click", () => {
+      const stepBadge = stepCard.querySelector(".badge");
+      if (stepBadge && simulatorPlayer) {
+        const match = stepBadge.textContent.match(/Step\s+(\d+)/i);
+        if (match) {
+          const stepIdx = parseInt(match[1], 10);
+          simulatorPlayer.seek(stepIdx);
+          showToast(`Jumped to Step ${stepIdx}`, "info", 1500);
+        }
+      }
+    });
+  });
+
+  // Highlight fallback if SimulatorPlayer is not active
+  if (!simulatorPlayer && graphManager && dfaSim && dfaSim.trace && dfaSim.trace.length > 0) {
     const lastStep = dfaSim.trace[dfaSim.trace.length - 1];
     const prevStep = dfaSim.trace.length > 1 ? dfaSim.trace[dfaSim.trace.length - 2] : null;
     const traversed = (prevStep && lastStep.symbol_consumed !== null) ? [{
