@@ -1,0 +1,11 @@
+{
+  "name": "Incomplete_DFA_Test",
+  "description": "Automaton with missing transitions to test trap/dead state logic",
+  "states": ["q0", "q1"],
+  "alphabet": ["0", "1"],
+  "start_state": "q0",
+  "final_states": ["q1"],
+  "transitions": [
+    { "from": "q0", "symbol": "0", "to": ["q1"] }
+  ]
+}

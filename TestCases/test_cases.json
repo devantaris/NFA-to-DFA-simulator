@@ -1,0 +1,82 @@
+[
+  {
+    "id": "T01",
+    "feature": "DFA simulation: accepted string",
+    "machine": "01_ends_with_01.json",
+    "input": "10101",
+    "expected": "Accept",
+    "description": "Standard binary string ending in 01"
+  },
+  {
+    "id": "T02",
+    "feature": "DFA simulation: rejected string",
+    "machine": "01_ends_with_01.json",
+    "input": "1010",
+    "expected": "Reject",
+    "description": "Binary string ending in 10 (not 01)"
+  },
+  {
+    "id": "T03",
+    "feature": "Unknown symbol in input",
+    "machine": "01_ends_with_01.json",
+    "input": "10201",
+    "expected": "Validation error",
+    "description": "Contains symbol '2' which is outside alphabet {0, 1}"
+  },
+  {
+    "id": "T04",
+    "feature": "Empty string ε handling",
+    "machine": "01_ends_with_01.json",
+    "input": "",
+    "expected": "Reject",
+    "description": "Empty string on automaton whose start state is non-accepting"
+  },
+  {
+    "id": "T05",
+    "feature": "Missing transition / malformed definition",
+    "machine": "05_incomplete_automaton.json",
+    "input": "1",
+    "expected": "Handled according to documented rules",
+    "description": "Transition on '1' is undefined in incomplete DFA"
+  },
+  {
+    "id": "T06",
+    "feature": "ε-Closure with cyclic transitions",
+    "machine": "03_cyclic_epsilon.json",
+    "input": "0",
+    "expected": "Accept",
+    "description": "Cyclic ε-loop A -> B -> C -> A terminates and accepts '0'"
+  },
+  {
+    "id": "T07",
+    "feature": "Powerset subset construction correctness",
+    "machine": "02_contains_00_epsilon.json",
+    "input": "00",
+    "expected": "Accept",
+    "description": "Branches through ε-paths to recognize 00"
+  },
+  {
+    "id": "T08",
+    "feature": "DFA Minimization: Equivalence merging",
+    "machine": "04_redundant_dfa.json",
+    "input": "01",
+    "expected": "Accept",
+    "description": "Redundant states C and D are merged without altering language"
+  },
+  {
+    "id": "T09",
+    "feature": "Dual NFA vs DFA equivalence verification",
+    "machine": "01_ends_with_01.json",
+    "input": "0001",
+    "expected": "Accept",
+    "description": "Both NFA and converted DFA output identical verdict"
+  },
+  {
+    "id": "T10",
+    "feature": "Malformed NFA schema rejection",
+    "machine": "invalid_schema",
+    "input": "0",
+    "expected": "Validation error",
+    "description": "NFA with undefined start state raises ValueError"
+  }
+]

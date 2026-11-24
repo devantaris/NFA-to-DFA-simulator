@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CSET302: NFA to DFA Simulator & Minimizer</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+  <!-- Viz.js for client-side Graphviz rendering -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/viz.js/2.1.2/viz.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/viz.js/2.1.2/full.render.js"></script>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>Automata Theory Simulator: NFA to DFA Engine</h1>
+      <p>CSET302 Milestone-II | Bennett University | SCSET</p>
+    </div>
+    <div class="badge">Milestone-II Ready</div>
+  </div>
+
+  <div class="main-grid">
+    <!-- Left Column: Controls & Input -->
+    <div>
+      <div class="card">
+        <h2>Automaton Input</h2>
+        <div class="form-group">
+          <label for="sample-select">Load Preset Automaton:</label>
+          <select id="sample-select">
+            <option value="custom">-- Custom Automaton --</option>
+            <option value="sample_01" selected>Sample 1: Ends with '01' (NFA)</option>
+            <option value="sample_02">Sample 2: Contains '00' or '11' (ε-NFA)</option>
+            <option value="sample_03">Sample 3: Cyclic ε-transitions (Complex ε-NFA)</option>
+            <option value="sample_04">Sample 4: Minimization Candidate (Redundant States)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="nfa-json">NFA Definition (JSON):</label>
+          <textarea id="nfa-json" rows="14"></textarea>
+        </div>
+
+        <div>
+          <button id="btn-convert" class="btn-primary">Convert & Minimize</button>
+          <button id="btn-reset" class="btn-secondary">Reset</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>String Simulator & Verification</h2>
+        <div class="form-group">
+          <label for="sim-input">Input String (w ∈ Σ*):</label>
+          <input type="text" id="sim-input" placeholder="e.g. 10101 (or empty for ε)" />
+        </div>
+        <div>
+          <button id="btn-simulate" class="btn-primary">Simulate Step-by-Step</button>
+        </div>
+        <div id="sim-verdict-container" style="margin-top: 14px; display: none;"></div>
+      </div>
+    </div>
+
+    <!-- Right Column: Visualization & Results -->
+    <div>
+      <div class="card">
+        <div class="tabs">
+          <div class="tab active" data-tab="tab-nfa">1. Original NFA</div>
+          <div class="tab" data-tab="tab-conversion">2. Subset Construction</div>
+          <div class="tab" data-tab="tab-dfa">3. Converted DFA</div>
+          <div class="tab" data-tab="tab-minimal">4. Minimal DFA</div>
+          <div class="tab" data-tab="tab-trace">5. Simulation Trace</div>
+        </div>
+
+        <!-- Tab 1: Original NFA -->
+        <div id="tab-nfa" class="tab-content active">
+          <h3>NFA State Transition Diagram</h3>
+          <div id="nfa-diagram" class="diagram-container"></div>
+          <h3 style="margin-top: 20px;">Transition Table & ε-Closures</h3>
+          <div id="nfa-table-view" class="table-wrapper"></div>
+          <div id="epsilon-closures-view" style="margin-top: 14px;"></div>
+        </div>
+
+        <!-- Tab 2: Subset Construction Log -->
+        <div id="tab-conversion" class="tab-content">
+          <h3>Powerset Construction Step-by-Step Matrix</h3>
+          <p style="color: var(--text-muted); font-size: 13px; margin: 6px 0 12px 0;">
+            Deterministic tracking of subset moves: δ<sub>D</sub>(S, a) = ε-closure(∪ δ(s, a))
+          </p>
+          <div id="conversion-table-view" class="table-wrapper"></div>
+          <h4 style="margin-top: 16px;">DFA State to NFA Subset Mapping</h4>
+          <div id="state-mapping-view" class="table-wrapper"></div>
+        </div>
+
+        <!-- Tab 3: Converted DFA -->
+        <div id="tab-dfa" class="tab-content">
+          <h3>Converted DFA State Diagram</h3>
+          <div id="dfa-diagram" class="diagram-container"></div>
+          <h3 style="margin-top: 20px;">DFA Transition Table</h3>
+          <div id="dfa-table-view" class="table-wrapper"></div>
+        </div>
+
+        <!-- Tab 4: Minimal DFA -->
+        <div id="tab-minimal" class="tab-content">
+          <h3>Minimal DFA State Diagram</h3>
+          <div id="min-dfa-diagram" class="diagram-container"></div>
+          <h3 style="margin-top: 20px;">Myhill-Nerode Triangular Equivalence Table</h3>
+          <div id="min-triangular-view" class="table-wrapper"></div>
+          <h3 style="margin-top: 20px;">Minimal DFA Transition Table</h3>
+          <div id="min-dfa-table-view" class="table-wrapper"></div>
+        </div>
+
+        <!-- Tab 5: Simulation Trace -->
+        <div id="tab-trace" class="tab-content">
+          <h3>Dual Trace Comparison (NFA vs Minimal DFA)</h3>
+          <div id="trace-comparison-view">
+            <p style="color: var(--text-muted);">Enter an input string and click 'Simulate Step-by-Step'.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

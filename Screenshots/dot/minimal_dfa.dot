@@ -1,0 +1,23 @@
+digraph Automaton {
+  rankdir=LR;
+  node [fontname="Helvetica", fontsize=11];
+  edge [fontname="Helvetica", fontsize=10];
+  label="Minimal DFA";
+  labelloc="t";
+  fontsize=13;
+
+  // Start state arrow
+  __start__ [shape=none, label="", width=0, height=0];
+  __start__ -> "m0";
+
+  node [shape=doublecircle, style=filled, fillcolor="#E8F5E9"]; "m2";
+  node [shape=circle, style=filled, fillcolor="#F5F5F5"]; "m0" "m1";
+
+  // Transitions
+  "m0" -> "m0" [label="1"];
+  "m0" -> "m1" [label="0"];
+  "m1" -> "m1" [label="0"];
+  "m1" -> "m2" [label="1"];
+  "m2" -> "m0" [label="1"];
+  "m2" -> "m1" [label="0"];
+}

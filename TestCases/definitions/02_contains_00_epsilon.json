@@ -1,0 +1,17 @@
+{
+  "name": "Contains_00_or_11_Epsilon",
+  "description": "Uses epsilon transitions to branch to 00 detector or 11 detector",
+  "states": ["q0", "q1", "q2", "q3", "q4", "q5", "q6"],
+  "alphabet": ["0", "1"],
+  "start_state": "q0",
+  "final_states": ["q6"],
+  "transitions": [
+    { "from": "q0", "symbol": "ε", "to": ["q1", "q3"] },
+    { "from": "q1", "symbol": "0", "to": ["q2"] },
+    { "from": "q2", "symbol": "0", "to": ["q6"] },
+    { "from": "q3", "symbol": "1", "to": ["q4"] },
+    { "from": "q4", "symbol": "1", "to": ["q6"] },
+    { "from": "q6", "symbol": "0", "to": ["q6"] },
+    { "from": "q6", "symbol": "1", "to": ["q6"] }
+  ]
+}
