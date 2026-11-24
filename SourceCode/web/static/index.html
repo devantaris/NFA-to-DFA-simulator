@@ -12,6 +12,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"></script>
+  <!-- Cytoscape-SVG for vector export (Milestone M3) -->
+  <script src="https://cdn.jsdelivr.net/npm/cytoscape-svg@0.4.0/cytoscape-svg.min.js"></script>
 </head>
 <body class="dark-theme">
   <!-- Top Glassmorphic Navigation Bar -->
@@ -357,6 +359,8 @@
   <!-- Non-blocking Toast Notification Root Container -->
   <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
+  <!-- Graph Manager (Cytoscape.js & Dagre Engine Wrapper) -->
+  <script src="/static/graph_manager.js"></script>
   <!-- Central Application Script -->
   <script src="/static/app.js"></script>
 </body>

@@ -66,6 +66,8 @@ const SAMPLE_AUTOMATA = {
 
 let currentConversionData = null;
 let vizInstance = null;
+let graphManager = null;
+let currentActiveView = "nfa";
 
 // Initialize Viz.js if available
 if (typeof Viz !== "undefined") {
@@ -73,14 +75,35 @@ if (typeof Viz !== "undefined") {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  initGraphManager();
   setupTabs();
   setupSampleSelector();
   setupButtons();
+  setupExportButtons();
+  setupCanvasControls();
 
   // Load sample 1 initially
   loadSample("sample_01");
   convertCurrentNFA();
 });
+
+function initGraphManager() {
+  const container = document.getElementById("canvas") || document.getElementById("cy-container");
+  if (!container) {
+    console.warn("Canvas container element not found for GraphManager.");
+    return;
+  }
+  if (typeof GraphManager !== "undefined") {
+    try {
+      graphManager = new GraphManager(container);
+      graphManager.init();
+    } catch (err) {
+      console.error("Failed to initialize GraphManager:", err);
+    }
+  } else {
+    console.info("GraphManager class not yet loaded.");
+  }
+}
 
 function setupTabs() {
   const tabs = document.querySelectorAll(".tab");
@@ -91,9 +114,57 @@ function setupTabs() {
 
       tab.classList.add("active");
       const targetId = tab.getAttribute("data-tab");
-      document.getElementById(targetId).classList.add("active");
+      const targetContent = document.getElementById(targetId);
+      if (targetContent) {
+        targetContent.classList.add("active");
+      }
+
+      // Synchronize interactive Cytoscape graph view
+      syncGraphWithTab(targetId);
     });
   });
+}
+
+function syncGraphWithTab(tabId) {
+  if (!graphManager || !currentConversionData) return;
+
+  switch (tabId) {
+    case "tab-nfa":
+      currentActiveView = "nfa";
+      if (currentConversionData.nfa) {
+        graphManager.loadAutomaton(currentConversionData.nfa, "nfa");
+      }
+      break;
+    case "tab-dfa":
+      currentActiveView = "dfa";
+      if (currentConversionData.converted_dfa) {
+        graphManager.loadAutomaton(currentConversionData.converted_dfa, "dfa");
+      }
+      break;
+    case "tab-minimal":
+      currentActiveView = "minimal";
+      if (currentConversionData.minimal_dfa) {
+        graphManager.loadAutomaton(currentConversionData.minimal_dfa, "minimal");
+      }
+      break;
+    case "tab-conversion":
+      currentActiveView = "dfa";
+      if (currentConversionData.converted_dfa) {
+        graphManager.loadAutomaton(currentConversionData.converted_dfa, "dfa");
+      }
+      break;
+    case "tab-trace":
+      currentActiveView = "minimal";
+      if (currentConversionData.minimal_dfa) {
+        graphManager.loadAutomaton(currentConversionData.minimal_dfa, "minimal");
+      }
+      break;
+    default:
+      if (currentConversionData.nfa) {
+        graphManager.loadAutomaton(currentConversionData.nfa, "nfa");
+      }
+      break;
+  }
 }
 
 function setupSampleSelector() {
@@ -128,6 +199,63 @@ function setupButtons() {
   });
 }
 
+function setupExportButtons() {
+  const btnExportPng = document.getElementById("btn-export-png");
+  if (btnExportPng) {
+    btnExportPng.addEventListener("click", () => {
+      exportGraph("png");
+    });
+  }
+
+  const btnExportSvg = document.getElementById("btn-export-svg");
+  if (btnExportSvg) {
+    btnExportSvg.addEventListener("click", () => {
+      exportGraph("svg");
+    });
+  }
+}
+
+function exportGraph(format) {
+  if (!graphManager) {
+    showToast("Graph Manager is not initialized", "warning");
+    return;
+  }
+  if (!currentConversionData) {
+    showToast("Please convert an automaton before exporting", "info");
+    return;
+  }
+
+  try {
+    if (typeof graphManager.exportImage === "function") {
+      graphManager.exportImage(format);
+    }
+  } catch (err) {
+    console.error(`Export ${format} failed:`, err);
+    showToast(`Export failed: ${err.message}`, "error");
+  }
+}
+
+function setupCanvasControls() {
+  const btnRelayout = document.getElementById("tool-relayout");
+  if (btnRelayout) {
+    btnRelayout.addEventListener("click", () => {
+      if (graphManager && typeof graphManager.runLayout === "function") {
+        graphManager.runLayout();
+        showToast("Auto-layout recalculated", "info");
+      }
+    });
+  }
+
+  const btnZoomFit = document.getElementById("tool-zoom-fit");
+  if (btnZoomFit) {
+    btnZoomFit.addEventListener("click", () => {
+      if (graphManager && typeof graphManager.fit === "function") {
+        graphManager.fit();
+      }
+    });
+  }
+}
+
 async function renderDot(containerId, dotString) {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -154,7 +282,7 @@ async function convertCurrentNFA() {
   try {
     parsedNFA = JSON.parse(jsonText);
   } catch (err) {
-    alert("Invalid JSON format in NFA definition: " + err.message);
+    showToast("Invalid JSON format in NFA definition: " + err.message, "error");
     return;
   }
 
@@ -166,7 +294,7 @@ async function convertCurrentNFA() {
     });
     const data = await res.json();
     if (data.error) {
-      alert("Conversion Error: " + data.error);
+      showToast("Conversion Error: " + data.error, "error");
       return;
     }
 
@@ -175,9 +303,16 @@ async function convertCurrentNFA() {
     renderConversionView(data);
     renderDFAView(data);
     renderMinimalDFAView(data);
+
+    // Synchronize interactive canvas with the currently active tab
+    const activeTab = document.querySelector(".tab.active");
+    const activeTabId = activeTab ? activeTab.getAttribute("data-tab") : "tab-nfa";
+    syncGraphWithTab(activeTabId);
+
+    showToast("Automaton converted and minimized successfully", "success");
   } catch (err) {
     console.error(err);
-    alert("API Request Failed: " + err.message);
+    showToast("API Request Failed: " + err.message, "error");
   }
 }
 
@@ -345,7 +480,7 @@ async function simulateInputString() {
   try {
     parsedNFA = JSON.parse(jsonText);
   } catch (err) {
-    alert("Invalid JSON: " + err.message);
+    showToast("Invalid JSON: " + err.message, "error");
     return;
   }
 
@@ -357,7 +492,7 @@ async function simulateInputString() {
     });
     const data = await res.json();
     if (data.error) {
-      alert("Simulation Error: " + data.error);
+      showToast("Simulation Error: " + data.error, "error");
       return;
     }
 
@@ -366,10 +501,15 @@ async function simulateInputString() {
     // Switch to trace tab automatically
     document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
     document.querySelectorAll(".tab-content").forEach(tc => tc.classList.remove("active"));
-    document.querySelector('[data-tab="tab-trace"]').classList.add("active");
-    document.getElementById("tab-trace").classList.add("active");
+    const traceTab = document.querySelector('[data-tab="tab-trace"]');
+    if (traceTab) traceTab.classList.add("active");
+    const traceContent = document.getElementById("tab-trace");
+    if (traceContent) traceContent.classList.add("active");
+
+    // Sync graph with trace tab
+    syncGraphWithTab("tab-trace");
   } catch (err) {
-    alert("Simulation request failed: " + err.message);
+    showToast("Simulation request failed: " + err.message, "error");
   }
 }
 
@@ -424,6 +564,78 @@ function renderSimulationTrace(data) {
   `;
 
   document.getElementById("trace-comparison-view").innerHTML = html;
+
+  // Highlight simulation final state on active graph canvas if available
+  if (graphManager && dfaSim && dfaSim.trace && dfaSim.trace.length > 0) {
+    const lastStep = dfaSim.trace[dfaSim.trace.length - 1];
+    const prevStep = dfaSim.trace.length > 1 ? dfaSim.trace[dfaSim.trace.length - 2] : null;
+    const traversed = (prevStep && lastStep.symbol_consumed !== null) ? [{
+      from: prevStep.current_states,
+      to: lastStep.current_states,
+      symbol: lastStep.symbol_consumed
+    }] : [];
+    graphManager.highlightSimulationStep(
+      lastStep.current_states,
+      traversed,
+      prevStep ? prevStep.current_states : []
+    );
+  }
+}
+
+function showToast(message, type = "info", duration = 4000) {
+  const container = document.getElementById("toast-container");
+  if (!container) {
+    console.log(`[Toast ${type}]: ${message}`);
+    return;
+  }
+
+  const toast = document.createElement("div");
+  toast.className = `toast toast-${type}`;
+
+  const icons = {
+    success: "✓",
+    error: "✕",
+    warning: "⚠",
+    info: "ℹ"
+  };
+
+  const titles = {
+    success: "Success",
+    error: "Error",
+    warning: "Warning",
+    info: "Notification"
+  };
+
+  toast.innerHTML = `
+    <span class="toast-icon">${icons[type] || "ℹ"}</span>
+    <div class="toast-body">
+      <div class="toast-title">${titles[type] || "Notification"}</div>
+      <div class="toast-message">${escapeHtml(message)}</div>
+    </div>
+    <button class="toast-close" type="button" aria-label="Close">&times;</button>
+  `;
+
+  const closeBtn = toast.querySelector(".toast-close");
+  const dismiss = () => {
+    toast.classList.add("toast-hiding");
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+      }
+    }, 300);
+  };
+
+  closeBtn.addEventListener("click", dismiss);
+  container.appendChild(toast);
+
+  if (duration > 0) {
+    setTimeout(dismiss, duration);
+  }
+}
+
+// Expose showToast to window for global access
+if (typeof window !== "undefined") {
+  window.showToast = showToast;
 }
 
 function escapeHtml(text) {
