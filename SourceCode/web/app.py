@@ -266,6 +266,7 @@ class AutomataRequestHandler(BaseHTTPRequestHandler):
 
 def run_web_server(host: str = "127.0.0.1", port: int = 8000) -> None:
     server_address = (host, port)
+    ThreadingHTTPServer.allow_reuse_address = True
     httpd = ThreadingHTTPServer(server_address, AutomataRequestHandler)
     httpd.daemon_threads = True
     print(f"\n========================================================================")
