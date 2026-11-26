@@ -265,20 +265,42 @@ class AutomataRequestHandler(BaseHTTPRequestHandler):
 
 
 def run_web_server(host: str = "127.0.0.1", port: int = 8000) -> None:
-    server_address = (host, port)
-    ThreadingHTTPServer.allow_reuse_address = True
-    httpd = ThreadingHTTPServer(server_address, AutomataRequestHandler)
-    httpd.daemon_threads = True
+    import sys
+    import traceback
+    candidate_ports = [port] if port != 8000 else [8000, 8080, 8081, 8888]
+    httpd = None
+    selected_port = None
+
+    for p in candidate_ports:
+        try:
+            server_address = (host, p)
+            httpd = ThreadingHTTPServer(server_address, AutomataRequestHandler)
+            httpd.daemon_threads = True
+            selected_port = p
+            break
+        except OSError:
+            continue
+
+    if httpd is None:
+        print(f"[Error] Failed to bind server on {host} across candidate ports {candidate_ports}", file=sys.stderr, flush=True)
+        return
+
     print(f"\n========================================================================")
     print(f" CSET302 Automata Theory Simulator Web Interface is running!")
-    print(f" Access in your browser: http://{host}:{port}")
+    print(f" Access in your browser: http://{host}:{selected_port}")
     print(f" Press Ctrl+C to terminate.")
-    print(f"========================================================================\n")
-    try:
-        httpd.serve_forever()
-    except KeyboardInterrupt:
-        print("\nStopping web server.")
-        httpd.server_close()
+    print(f"========================================================================\n", flush=True)
+
+    while True:
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            print("\nStopping web server.", flush=True)
+            httpd.server_close()
+            break
+        except Exception as e:
+            print(f"[Warning] Exception in web server loop: {e}", file=sys.stderr, flush=True)
+            traceback.print_exc()
 
 
 if __name__ == "__main__":
